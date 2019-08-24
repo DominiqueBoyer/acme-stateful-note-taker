@@ -24,31 +24,81 @@
       const {HashRouter, Route, Link, Switch, Redirect, NavLink, } = ReactRouterDOM;
 
 
-      const Nav = ()=> {
+      const Nav = ({ user, notes })=> {
         return (
-          <nav>
-            <NavLink to='/notes/list'>Notes</NavLink>
-            <NavLink to='/notes/archived'>Archived</NavLink>
-            <NavLink to='/notes/create'>Create</NavLink>
-          </nav>
-        );
+          <div>
+            <nav>
 
-      }
+              <NavLink to='/notes/list'>Notes ({notes.length})</NavLink>
+              <NavLink to='/notes/archived'>Archived ()</NavLink>
+              <NavLink to='/notes/create'>Create</NavLink>
+            </nav>
+
+            <h2>Acme Note Taker for -- {user.fullName}</h2>
+          </div>
+        );
+      };
+
+
+      const API = 'https://acme-users-api-rev.herokuapp.com/api';
+      const fetchUser = async ()=> {
+        const storage = window.localStorage;
+        const userId = storage.getItem('userId');
+        if(userId){
+          try {
+            return (await axios.get(`${API}/users/detail/${userId}`)).data;
+          }
+          catch(ex){
+            storage.removeItem('userId');
+            return fetchUser();
+          }
+        }
+        const user = (await axios.get(`${API}/users/random`)).data;
+        storage.setItem('userId', user.id);
+        return  user;
+      };
+
+      const Notes = ({ notes })=>{
+        return (
+          <div>
+            <hr/>
+            <ul>
+              {
+                notes.map(note => <li key={note.id}>{note.text}</li>)
+              }
+            </ul>
+          </div>
+
+          );
+
+      };
 
       class App extends Component {
         constructor(){
           super();
           this.state ={
+            user:{},
+            notes: []
 
           }
         }
-        componentDidMount(){
+        async componentDidMount(){
+          const user = await fetchUser()
+          const notes = (await axios(`${API}/users/${user.id}/notes`)).data
+          console.log(notes);
+          this.setState( {user, notes} );
+
+
 
         }
         render(){
+          const { user, notes } = this.state;
           return (
             <HashRouter>
-              <Route render={()=> <Nav  />}/>
+              <Route render={()=> <Nav user={user} notes={notes} />}/>
+              <Switch>
+                <Route path='/notes/:status' render={ ()=> <Notes notes={notes}/>}/>
+              </Switch>
             </HashRouter>
           )
 
