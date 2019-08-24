@@ -55,7 +55,6 @@
 
       const Notes = ({ match, notes })=> {
         const status = match.params.status;
-        console.log(status);
         let filtered = [];
         if(status === 'list') {
           filtered = notes.filter(note => note.archived === false);
@@ -79,13 +78,24 @@
       class Create extends Component {
         constructor() {
           super();
+          this.state = {
+            note: ''
+          };
+          this.create = this.create.bind(this);
+        }
+
+        create() {
+          this.props.onCreate(this.state.note);
+          this.props.history.push('/notes/list');
         }
 
         render() {
+          const { note } = this.state;
+          const { create } = this;
           return (
-            <form>
-              <input />
-              <button>Create</button>
+            <form onSubmit={ev => ev.preventDefault()}>
+              <input name="note" value={ note } onChange={(ev) => this.setState({note: ev.target.value})} />
+              <button onClick={ create }>Create</button>
             </form>
           );
         }
@@ -98,22 +108,33 @@
             user:{},
             notes: []
           };
+          this.onCreate =this.onCreate.bind(this);
+        }
+
+        onCreate(note) {
+          if(this.state.notes.length === 5) {
+            return undefined;
+          } else {
+            const notes = [...this.state.notes, {archived: false, id: Math.random(), text: note, userId: this.state.user.id}];
+            this.setState({ notes });
+          }
         }
 
         async componentDidMount(){
           const user = await fetchUser()
           const notes = (await axios(`${API}/users/${user.id}/notes`)).data
-          console.log(notes);
           this.setState( {user, notes} );
         }
 
         render(){
           const { user, notes } = this.state;
+          const { onCreate } = this;
+          console.log(notes);
           return (
             <HashRouter>
               <Route render={()=> <Nav user={user} notes={notes} />}/>
               <Switch>
-                <Route path='/notes/create' render={() => <Create /> } />
+                <Route path='/notes/create' render={(props) => <Create {...props} onCreate={ onCreate }/> } />
                 <Route path='/notes/:status' render={ (props)=> <Notes {...props} notes={notes}/>}/>
                 <Redirect to='/notes/list' />
               </Switch>
