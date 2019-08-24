@@ -4,7 +4,6 @@
     <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-router-dom/5.0.1/react-router-dom.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.js"></script>
-
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <style>
       nav{
@@ -12,35 +11,16 @@
         justify-content: space-around;
       }
     </style>
-
   </head>
   <body>
     <div id='root'></div>
-
     <script type='text/babel'>
-      const root =document.querySelector('#root')
+      const root = document.querySelector('#root')
       const { render } = ReactDOM;
       const {Component} = React;
       const {HashRouter, Route, Link, Switch, Redirect, NavLink, } = ReactRouterDOM;
-
-
-      const Nav = ({ user, notes })=> {
-        return (
-          <div>
-            <nav>
-
-              <NavLink to='/notes/list'>Notes ({notes.length})</NavLink>
-              <NavLink to='/notes/archived'>Archived ()</NavLink>
-              <NavLink to='/notes/create'>Create</NavLink>
-            </nav>
-
-            <h2>Acme Note Taker for -- {user.fullName}</h2>
-          </div>
-        );
-      };
-
-
       const API = 'https://acme-users-api-rev.herokuapp.com/api';
+
       const fetchUser = async ()=> {
         const storage = window.localStorage;
         const userId = storage.getItem('userId');
@@ -58,20 +38,55 @@
         return  user;
       };
 
-      const Notes = ({ notes })=>{
+      const Nav = ({ user, notes })=> {
+        const noteList = notes.filter(note => note.archived === false);
+
+        return (
+          <div>
+            <nav>
+              <NavLink to='/notes/list'>Notes ({noteList.length})</NavLink>
+              <NavLink to='/notes/archived'>Archived ({notes.length - noteList.length})</NavLink>
+              <NavLink to='/notes/create'>Create</NavLink>
+            </nav>
+            <h2>Acme Note Taker for -- {user.fullName}</h2>
+          </div>
+        );
+      };
+
+      const Notes = ({ match, notes })=> {
+        const status = match.params.status;
+        console.log(status);
+        let filtered = [];
+        if(status === 'list') {
+          filtered = notes.filter(note => note.archived === false);
+        } else if(status === 'archived') {
+          filtered = notes.filter(note => note.archived === true);
+        }
+
         return (
           <div>
             <hr/>
+            <h3>{status}</h3>
             <ul>
               {
-                notes.map(note => <li key={note.id}>{note.text}</li>)
+                filtered.map(note => <li key={note.id}>{note.text}</li>)
               }
             </ul>
           </div>
-
           );
-
       };
+
+      class Create extends Component {
+        constructor() {
+          super();
+        }
+
+        render() {
+          return (
+            <hr />
+          );
+        }
+      }
 
       class App extends Component {
         constructor(){
@@ -79,38 +94,31 @@
           this.state ={
             user:{},
             notes: []
-
-          }
+          };
         }
+
         async componentDidMount(){
           const user = await fetchUser()
           const notes = (await axios(`${API}/users/${user.id}/notes`)).data
           console.log(notes);
           this.setState( {user, notes} );
-
-
-
         }
+
         render(){
           const { user, notes } = this.state;
           return (
             <HashRouter>
               <Route render={()=> <Nav user={user} notes={notes} />}/>
               <Switch>
-                <Route path='/notes/:status' render={ ()=> <Notes notes={notes}/>}/>
+                <Route path='/notes/create' render={() => <Create /> } />
+                <Route path='/notes/:status' render={ (props)=> <Notes {...props} notes={notes}/>}/>
+                <Redirect to='/notes/list' />
               </Switch>
             </HashRouter>
-          )
-
+          );
         }
       }
-
-
-
-
       render( <App/>, root)
-
     </script>
-
   </body>
 </html>
