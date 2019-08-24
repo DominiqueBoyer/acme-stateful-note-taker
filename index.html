@@ -68,8 +68,19 @@
             <h3>{status}</h3>
             <ul>
               {
-                filtered.map(note => <li key={note.id}>{note.text}</li>)
+                filtered.map(note => {
+                  return (
+                  <li key={note.id}>
+                  {note.text}
+                  <br/>
+                  <button onClick={ props => console.log(props)}>archive</button>
+                  <button >destroy</button>
+                  </li>
+                  )}
+                )
+
               }
+
             </ul>
           </div>
           );
@@ -95,7 +106,6 @@
         }
 
         render() {
-          console.log(this.props);
           const { note, error } = this.state;
           const { create } = this;
           return (
@@ -120,11 +130,13 @@
           this.onCreate =this.onCreate.bind(this);
         }
 
-        onCreate(note) {
+       async onCreate(note ) {
+         console.log(typeof note)
           if(this.state.notes.length === 5) {
             return undefined;
           } else {
-            const notes = [...this.state.notes, {archived: false, id: Math.random(), text: note, userId: this.state.user.id}];
+            const note = await axios.post(`${API}/users/${this.state.user.id}/notes`, {archived: false, text: note})
+            const notes = [...this.state.notes, note];
             this.setState({ notes });
           }
         }
@@ -138,7 +150,6 @@
         render(){
           const { user, notes } = this.state;
           const { onCreate } = this;
-          console.log(notes);
           return (
             <HashRouter>
               <Route render={()=> <Nav user={user} notes={notes} />}/>
