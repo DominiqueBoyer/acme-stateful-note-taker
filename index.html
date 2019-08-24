@@ -79,24 +79,33 @@
         constructor() {
           super();
           this.state = {
-            note: ''
+            note: '',
+            error: ''
           };
           this.create = this.create.bind(this);
         }
 
         create() {
           this.props.onCreate(this.state.note);
-          this.props.history.push('/notes/list');
+          if(this.props.notes.length === 5) {
+            this.setState({error: 'User can only have 5 notes'});
+          } else {
+            this.props.history.push('/notes/list');
+          }
         }
 
         render() {
-          const { note } = this.state;
+          console.log(this.props);
+          const { note, error } = this.state;
           const { create } = this;
           return (
-            <form onSubmit={ev => ev.preventDefault()}>
-              <input name="note" value={ note } onChange={(ev) => this.setState({note: ev.target.value})} />
-              <button onClick={ create }>Create</button>
-            </form>
+            <div>
+              <h4>{error}</h4>
+              <form onSubmit={ev => ev.preventDefault()}>
+                <input name="note" value={ note } onChange={(ev) => this.setState({note: ev.target.value})} />
+                <button onClick={ create }>Create</button>
+              </form>
+            </div>
           );
         }
       }
@@ -134,7 +143,7 @@
             <HashRouter>
               <Route render={()=> <Nav user={user} notes={notes} />}/>
               <Switch>
-                <Route path='/notes/create' render={(props) => <Create {...props} onCreate={ onCreate }/> } />
+                <Route path='/notes/create' render={(props) => <Create {...props} onCreate={ onCreate } notes={ notes } /> } />
                 <Route path='/notes/:status' render={ (props)=> <Notes {...props} notes={notes}/>}/>
                 <Redirect to='/notes/list' />
               </Switch>
